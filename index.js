@@ -16,7 +16,7 @@ const openai = new OpenAI({
   apiKey: OPENAI_API_KEY
 });
 
-// 🔹 1️⃣ Verificación del webhook (GET)
+// Verificación del webhook (GET)
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -30,7 +30,7 @@ app.get("/webhook", (req, res) => {
   }
 });
 
-// 🔹 2️⃣ Recibir mensajes (POST)
+// Recibir mensajes (POST)
 app.post("/webhook", async (req, res) => {
   try {
     const entry = req.body?.entry?.[0];
@@ -39,7 +39,6 @@ app.post("/webhook", async (req, res) => {
 
     const message = value?.messages?.[0];
 
-    // 👇 Si no es un mensaje entrante, ignoramos
     if (!message) {
       return res.sendStatus(200);
     }
@@ -49,7 +48,7 @@ app.post("/webhook", async (req, res) => {
 
     console.log("Mensaje recibido:", text);
 
-    // 🔹 3️⃣ Generar respuesta con OpenAI
+    // Generar respuesta con OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -66,7 +65,7 @@ app.post("/webhook", async (req, res) => {
 
     const reply = completion.choices[0].message.content;
 
-    // 🔹 4️⃣ Enviar respuesta por WhatsApp
+    // Enviar respuesta por WhatsApp
     await fetch(
       `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`,
       {
