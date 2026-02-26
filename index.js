@@ -16,7 +16,10 @@ const openai = new OpenAI({
   apiKey: OPENAI_API_KEY
 });
 
-// Verificación del webhook (GET)
+// 🔹 Memoria simple para saber si ya se presentó
+const greeted = new Set();
+
+// 🔹 Verificación del webhook
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -30,13 +33,12 @@ app.get("/webhook", (req, res) => {
   }
 });
 
-// Recibir mensajes (POST)
+// 🔹 Recepción de mensajes
 app.post("/webhook", async (req, res) => {
   try {
     const entry = req.body?.entry?.[0];
     const change = entry?.changes?.[0];
     const value = change?.value;
-
     const message = value?.messages?.[0];
 
     if (!message) {
@@ -48,24 +50,56 @@ app.post("/webhook", async (req, res) => {
 
     console.log("Mensaje recibido:", text);
 
-    // Generar respuesta con OpenAI
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "Eres el asistente oficial de IOPARK. Responde de forma profesional y clara sobre cerraduras inteligentes."
-        },
-        {
-          role: "user",
-          content: text
-        }
-      ]
-    });
+    // 🔹 Detectar si es la primera vez que escribe
+    const isFirstTime = !greeted.has(from);
+    if (isFirstTime) greeted.add(from);
 
-    const reply = completion.choices[0].message.content;
+    // 🔹 Generar respuesta IA
+    let reply = "";
 
-    // Enviar respuesta por WhatsApp
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `
+Eres Aníbal, fundador de IOPARK (cerraduras inteligentes IoT en España).
+Hablas en primera persona como si estuvieras escribiendo directamente por WhatsApp.
+
+Nunca digas que eres un asistente o IA.
+
+Objetivo:
+1. Detectar si es comunidad, vivienda, empresa o alquiler turístico.
+2. Preguntar ciudad si no la ha dicho.
+3. Preguntar tipo de puerta (portal, garaje, entrada, interior).
+4. Explicar ventajas brevemente.
+5. Si hay interés real, ofrecer llamada personal.
+
+No repitas datos que ya haya dado el cliente.
+Sé breve y claro.
+`
+          },
+          {
+            role: "user",
+            content: text
+          }
+        ]
+      });
+
+      reply = completion.choices[0].message.content;
+
+    } catch (error) {
+      console.error("Error OpenAI:", error?.message);
+      reply = "Ahora mismo estoy atendiendo varias consultas. Si quieres, dime ciudad y tipo de puerta y te llamo personalmente.";
+    }
+
+    // 🔹 Presentación solo la primera vez
+    const finalReply = isFirstTime
+      ? `Hola, soy Aníbal de IOPARK 👋\n${reply}`
+      : reply;
+
+    // 🔹 Enviar respuesta por WhatsApp
     await fetch(
       `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`,
       {
@@ -78,7 +112,7 @@ app.post("/webhook", async (req, res) => {
           messaging_product: "whatsapp",
           to: from,
           type: "text",
-          text: { body: reply }
+          text: { body: finalReply }
         })
       }
     );
@@ -86,7 +120,7 @@ app.post("/webhook", async (req, res) => {
     res.sendStatus(200);
 
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error general:", error);
     res.sendStatus(500);
   }
 });
