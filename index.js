@@ -16,10 +16,10 @@ const openai = new OpenAI({
   apiKey: OPENAI_API_KEY
 });
 
-// 🔹 Memoria simple para saber si ya se presentó
+//  Memoria simple para saber si ya se presentó
 const greeted = new Set();
 
-// 🔹 Verificación del webhook
+//  Verificación del webhook
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -33,7 +33,7 @@ app.get("/webhook", (req, res) => {
   }
 });
 
-// 🔹 Recepción de mensajes
+//  Recepción de mensajes
 app.post("/webhook", async (req, res) => {
   try {
     const entry = req.body?.entry?.[0];
@@ -50,11 +50,11 @@ app.post("/webhook", async (req, res) => {
 
     console.log("Mensaje recibido:", text);
 
-    // 🔹 Detectar si es la primera vez que escribe
+    //  Detectar si es la primera vez que escribe
     const isFirstTime = !greeted.has(from);
     if (isFirstTime) greeted.add(from);
 
-    // 🔹 Generar respuesta IA
+    //  Generar respuesta IA
     let reply = "";
 
     try {
@@ -94,12 +94,12 @@ Sé breve y claro.
       reply = "Ahora mismo estoy atendiendo varias consultas. Si quieres, dime ciudad y tipo de puerta y te llamo personalmente.";
     }
 
-    // 🔹 Presentación solo la primera vez
+    //  Presentación solo la primera vez
     const finalReply = isFirstTime
       ? `Hola, soy Aníbal de IOPARK 👋\n${reply}`
       : reply;
 
-    // 🔹 Enviar respuesta por WhatsApp
+    //  Enviar respuesta por WhatsApp
     await fetch(
       `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`,
       {
