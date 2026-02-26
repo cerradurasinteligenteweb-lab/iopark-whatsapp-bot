@@ -100,22 +100,25 @@ Sé breve y claro.
       : reply;
 
     //  Enviar respuesta por WhatsApp
-    await fetch(
-      `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${WHATSAPP_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: from,
-          type: "text",
-          text: { body: finalReply }
-        })
-      }
-    );
+const response = await fetch(
+  `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`,
+  {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${WHATSAPP_TOKEN}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: from,
+      type: "text",
+      text: { body: finalReply }
+    })
+  }
+);
+
+const data = await response.text();
+console.log("Respuesta de WhatsApp:", data);
 
     res.sendStatus(200);
 
